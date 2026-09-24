@@ -300,23 +300,23 @@ describe("session lifecycle", () => {
 			clientInfo: { name: "vscode-editor-window" },
 		});
 		const id = randomUUID();
-		const uri = sessionUri(id);
-		const chat = `ahp-chat://default/${Buffer.from(uri).toString("base64url")}`;
-		await client.request("createSession", { channel: uri });
-		await client.subscribe(uri);
-		const events = client.attachSubscription(uri);
+		const clientSession = `pi:/${id}`;
+		const clientChat = `ahp-chat://default/${Buffer.from(clientSession).toString("base64url")}`;
+		await client.request("createSession", { channel: clientSession });
+		await client.subscribe(clientSession);
+		const events = client.attachSubscription(clientSession);
 
-		const dispatched = client.dispatch(chat, { type: ActionType.SessionIsArchivedChanged, isArchived: true });
+		const dispatched = client.dispatch(clientChat, { type: ActionType.SessionIsArchivedChanged, isArchived: true });
 		const event = await nextEvent(events, (candidate) => {
 			if (candidate.type !== "action") return false;
 			return (candidate as unknown as { params: ActionEnvelope }).params.origin?.clientSeq === dispatched.clientSeq;
 		});
 
 		assert.equal((event.params as ActionEnvelope).rejectionReason, undefined);
-		assert.notEqual((harness.host.store.get(uri) as SessionState).status & SessionStatus.IsArchived, 0);
+		assert.notEqual((harness.host.store.get(sessionUri(id)) as SessionState).status & SessionStatus.IsArchived, 0);
 		assert.equal(
 			harness.sessions
-				?.get(uri)
+				?.get(sessionUri(id))
 				?.sessionManager.getEntries()
 				.some((entry) => entry.type === "custom" && entry.customType === "pi-ahp.session-archive"),
 			true,

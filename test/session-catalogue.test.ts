@@ -110,15 +110,18 @@ describe("session catalogue", () => {
 		assert.deepEqual(result.items[0]?.workingDirectories, [pathToFileUri("/tmp/project a")]);
 	});
 
-	it("reports archived state from pi custom entries", async () => {
+	it("reports archived state from pi custom entries", async (t) => {
+		const archiveRoot = mkdtempSync(join(tmpdir(), "pi-ahp-catalogue-archive-"));
+		t.after(() => rmSync(archiveRoot, { recursive: true, force: true }));
+		const archiveCatalogue = new PiSessionCatalogue(archiveRoot);
 		const id = randomUUID();
-		writeFakeSession(root, id, {
+		writeFakeSession(archiveRoot, id, {
 			cwd: "/tmp/archive-project",
 			firstUserMessage: "Archived task",
 			archived: true,
 			mtimeSeconds: 1_700_000_100,
 		});
-		const result = await catalogue.list(undefined, undefined);
+		const result = await archiveCatalogue.list(undefined, undefined);
 		const item = result.items.find((entry) => entry.resource === sessionUri(id));
 		assert.ok(item);
 		assert.notEqual(item.status & SessionStatus.IsArchived, 0);
